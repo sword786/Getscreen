@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>GetScreen Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080a0e;
+  --s1: #0d1017;
+  --s2: #131720;
+  --s3: #1a2030;
+  --border: #1e2535;
+  --border2: #252e42;
+  --green: #00ff88;
+  --green-dim: rgba(0,255,136,0.12);
+  --red: #ff3b5c;
+  --red-dim: rgba(255,59,92,0.1);
+  --blue: #4d9fff;
+  --yellow: #ffc840;
+  --text: #d4dce8;
+  --muted: #556070;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --display: 'Bebas Neue', cursive;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,255,136,0.04) 0%, transparent 60%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(30,37,53,0.5) 39px, rgba(30,37,53,0.5) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(30,37,53,0.3) 39px, rgba(30,37,53,0.3) 40px);
+}
+header {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(8,10,14,0.9);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 56px;
+  display: flex; align-items: center; gap: 16px;
+}
+.logo { font-family: var(--display); font-size: 22px; letter-spacing: 2px; color: var(--text); flex-shrink: 0; }
+.logo em { color: var(--green); font-style: normal; }
+.header-sep { flex: 1; }
+.live-clock { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+.live-clock span { color: var(--green); }
+#setup { max-width: 600px; margin: 60px auto; padding: 0 20px; }
+.setup-badge {
+  display: inline-block; background: var(--green-dim);
+  border: 1px solid rgba(0,255,136,0.25); color: var(--green);
+  font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+  padding: 4px 10px; border-radius: 3px; margin-bottom: 20px; text-transform: uppercase;
+}
+.setup-title { font-family: var(--display); font-size: 52px; letter-spacing: 3px; line-height: 1; margin-bottom: 8px; }
+.setup-title em { color: var(--green); font-style:normal; }
+.setup-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 40px; line-height: 1.6; }
+.field-group { margin-bottom: 20px; }
+.field-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+.field-label span { color: var(--green); }
+input[type=text], input[type=password] {
+  width: 100%; background: var(--s1); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 12px 16px; color: var(--text);
+  font-family: var(--mono); font-size: 13px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type=text]:focus, input[type=password]:focus { border-color: var(--green); box-shadow: 0 0 0 2px rgba(0,255,136,0.08); }
+input::placeholder { color: var(--muted); }
+.multi-key-area { background: var(--s1); border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; }
+.key-row { display: grid; grid-template-columns: 1fr 160px auto; gap: 1px; background: var(--border); }
+.key-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+.key-row input { background: var(--s1); border: none; border-radius: 0; padding: 10px 12px; font-size: 12px; }
+.key-row input:focus { box-shadow: none; border-bottom: 1px solid var(--green); }
+.remove-key {
+  background: var(--s1); border: none; color: var(--muted); width: 38px;
+  cursor: pointer; font-size: 14px; transition: color 0.15s, background 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.remove-key:hover { color: var(--red); background: var(--red-dim); }
+.add-key-btn {
+  width: 100%; background: none; border: 1px dashed var(--border2); border-top: none;
+  color: var(--muted); padding: 9px; font-family: var(--mono); font-size: 11px;
+  cursor: pointer; transition: all 0.15s; border-radius: 0 0 6px 6px;
+}
+.add-key-btn:hover { color: var(--green); border-color: rgba(0,255,136,0.3); }
+.hint-box {
+  background: var(--s1); border: 1px solid var(--border); border-left: 2px solid var(--blue);
+  border-radius: 6px; padding: 14px 16px; font-family: var(--mono); font-size: 11px;
+  color: var(--muted); line-height: 1.8; margin-bottom: 28px;
+}
+.hint-box a { color: var(--blue); text-decoration: none; }
+.hint-box code { background: var(--s3); padding: 1px 5px; border-radius: 3px; color: var(--yellow); font-size: 10px; }
+.launch-btn {
+  width: 100%; background: var(--green); color: #000; border: none; border-radius: 6px;
+  padding: 14px; font-family: var(--display); font-size: 20px; letter-spacing: 3px;
+  cursor: pointer; transition: all 0.2s;
+}
+.launch-btn:hover { background: #00ffaa; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,255,136,0.25); }
+.launch-btn:disabled { background: var(--s3); color: var(--muted); transform: none; box-shadow: none; cursor: not-allowed; }
+#dashboard { display:none; padding: 16px 20px 40px; }
+.dash-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.dash-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.stat-chip {
+  background: var(--s1); border: 1px solid var(--border2); border-radius: 4px;
+  padding: 5px 10px; font-family: var(--mono); font-size: 11px; color: var(--muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.stat-chip .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.stat-chip .val { color: var(--text); font-weight:600; }
+.toolbar-sep { flex:1; }
+.tb-btn {
+  background: var(--s1); border: 1px solid var(--border2); color: var(--text);
+  padding: 7px 13px; border-radius: 5px; font-family: var(--mono); font-size: 11px;
+  cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.tb-btn:hover { border-color: var(--green); color: var(--green); }
+.cols-switcher { display:flex; gap:3px; }
+.col-btn {
+  background: var(--s1); border: 1px solid var(--border2); color: var(--muted);
+  width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 10px;
+  display: flex; align-items:center; justify-content:center; transition: all 0.15s;
+}
+.col-btn.active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.col-btn:hover:not(.active) { border-color: var(--border2); color: var(--text); }
+.filter-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-input {
+  background: var(--s1); border: 1px solid var(--border2); border-radius: 5px;
+  padding: 7px 12px; font-family: var(--mono); font-size: 12px; color: var(--text);
+  outline: none; width: 220px; transition: border-color 0.15s;
+}
+.filter-input:focus { border-color: var(--green); }
+.filter-input::placeholder { color: var(--muted); }
+.filter-pill {
+  background: var(--s1); border: 1px solid var(--border2); color: var(--muted);
+  padding: 6px 12px; border-radius: 20px; font-family: var(--mono); font-size: 11px;
+  cursor: pointer; transition: all 0.15s;
+}
+.filter-pill.active { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.filter-pill:hover:not(.active) { color: var(--text); }
+.pc-grid { display: grid; gap: 12px; transition: all 0.3s; }
+.pc-grid.c1 { grid-template-columns: 1fr; }
+.pc-grid.c2 { grid-template-columns: repeat(2, 1fr); }
+.pc-grid.c3 { grid-template-columns: repeat(3, 1fr); }
+.pc-grid.c4 { grid-template-columns: repeat(4, 1fr); }
+.pc-grid.c5 { grid-template-columns: repeat(5, 1fr); }
+.pc-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 8px;
+  overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  animation: cardIn 0.3s ease both;
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+.pc-card:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(0,0,0,0.5); transform: translateY(-1px); }
+.pc-card.online { border-color: rgba(0,255,136,0.2); }
+.pc-card.online:hover { border-color: rgba(0,255,136,0.45); box-shadow: 0 4px 20px rgba(0,255,136,0.07); }
+.pc-preview { position: relative; background: #050709; overflow: hidden; cursor: pointer; }
+.pc-grid.c1 .pc-preview { height: 400px; }
+.pc-grid.c2 .pc-preview { height: 260px; }
+.pc-grid.c3 .pc-preview { height: 200px; }
+.pc-grid.c4 .pc-preview { height: 160px; }
+.pc-grid.c5 .pc-preview { height: 140px; }
+.pc-preview img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.92; transition: opacity 0.3s, transform 0.3s; }
+.pc-preview:hover img { opacity: 1; transform: scale(1.02); }
+.preview-offline {
+  width: 100%; height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  color: var(--muted); font-family: var(--mono); font-size: 12px;
+}
+.preview-offline .offline-icon { font-size: 32px; opacity: 0.3; }
+.preview-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.85) 100%);
+  opacity: 0; transition: opacity 0.2s;
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 14px; gap: 8px;
+}
+.pc-preview:hover .preview-overlay { opacity: 1; }
+.connect-btn {
+  background: var(--green); color: #000; border: none; border-radius: 4px;
+  padding: 7px 16px; font-family: var(--display); font-size: 15px; letter-spacing: 1.5px;
+  cursor: pointer; transition: all 0.15s;
+}
+.connect-btn:hover { background: #00ffaa; transform: scale(1.03); }
+.connect-btn:disabled { background: var(--s3); color: var(--muted); cursor: not-allowed; transform: none; }
+.pc-info { padding: 10px 12px; border-top: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.pc-meta { flex: 1; min-width: 0; }
+.pc-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.pc-details { font-family: var(--mono); font-size: 10px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pc-details .sep { color: var(--border2); }
+.online-badge { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 3px; flex-shrink: 0; }
+.online-badge.on { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,136,0.25); }
+.online-badge.off { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,59,92,0.2); }
+.pc-actions { display: flex; gap: 3px; margin-top: 6px; }
+.pc-icon-btn {
+  background: var(--s2); border: 1px solid var(--border); color: var(--muted);
+  width: 26px; height: 26px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0;
+}
+.pc-icon-btn:hover { border-color: var(--border2); color: var(--text); }
+.account-section { margin-bottom: 28px; }
+.account-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.account-tag { font-family: var(--mono); font-size: 10px; color: var(--blue); background: rgba(77,159,255,0.1); border: 1px solid rgba(77,159,255,0.2); padding: 3px 8px; border-radius: 3px; letter-spacing: 1px; }
+.account-name { font-family: var(--mono); font-size: 12px; color: var(--muted); flex: 1; }
+.account-count { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); font-family: var(--mono); font-size: 13px; }
+.error-msg { background: var(--red-dim); border: 1px solid rgba(255,59,92,0.25); border-radius: 6px; padding: 12px 16px; font-family: var(--mono); font-size: 12px; color: var(--red); margin-bottom: 14px; }
+.success-msg { background: var(--green-dim); border: 1px solid rgba(0,255,136,0.2); border-radius: 6px; padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: var(--green); margin-bottom: 12px; }
+#toast { position: fixed; bottom: 24px; right: 24px; background: var(--s2); border: 1px solid var(--border2); border-radius: 6px; padding: 10px 16px; font-family: var(--mono); font-size: 12px; color: var(--text); z-index: 9999; transform: translateY(60px); opacity: 0; transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); max-width: 300px; }
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.green { border-left: 3px solid var(--green); }
+#toast.red { border-left: 3px solid var(--red); }
+.refresh-bar { height: 2px; background: var(--green); position: fixed; top: 56px; left: 0; width: 0%; z-index: 300; transition: width 0.3s; box-shadow: 0 0 8px var(--green); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+@media(max-width:700px){
+  .pc-grid.c2,.pc-grid.c3,.pc-grid.c4,.pc-grid.c5{grid-template-columns:1fr;}
+  .pc-grid.c1 .pc-preview{height:220px;}
+}
+</style>
+</head>
+<body>
+<div class="refresh-bar" id="refresh-bar"></div>
+<header>
+  <div class="logo">GET<em>SCREEN</em> <span style="font-family:var(--sans);font-size:11px;font-weight:300;color:var(--muted);letter-spacing:0">CMD CENTER</span></div>
+  <div class="header-sep"></div>
+  <div class="live-clock" id="clock">──</div>
+  <button class="tb-btn" id="hdr-edit-btn" style="display:none" onclick="backToSetup()">⚙ Config</button>
+  <button class="tb-btn" id="hdr-refresh-btn" style="display:none" onclick="refreshAll()">↺ Refresh</button>
+</header>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-badge">● SETUP</div>
+  <div class="setup-title">COMMAND<br><em>CENTER</em></div>
+  <div class="setup-sub">// Connect your GetScreen accounts via API key<br>// All PCs appear in one scrollable dashboard — no login conflicts</div>
+  <div class="hint-box">
+    <strong style="color:var(--text)">How to get your API key:</strong><br>
+    1. Login to <a href="https://getscreen.me/panel/settings/integrate/api-key" target="_blank">getscreen.me → Settings → Integrations → HTTP API</a><br>
+    2. Copy the <code>X-Api-Key</code> value and paste below<br>
+    3. If you have 2 accounts, add both keys — all PCs appear together<br><br>
+    <strong style="color:var(--text)">Note:</strong> Keys are saved in your browser locally. Never shared anywhere.
+  </div>
+  <div class="field-group">
+    <span class="field-label">API KEY(S) <span>— one key per GetScreen account</span></span>
+    <div class="multi-key-area">
+      <div id="key-rows"></div>
+      <button class="add-key-btn" onclick="addKeyRow()">+ Add another account key</button>
+    </div>
+  </div>
+  <div id="setup-msg"></div>
+  <button class="launch-btn" id="launch-btn" onclick="launch()">LOAD ALL PCS</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="dash-toolbar">
+    <div class="dash-stats" id="dash-stats"></div>
+    <div class="toolbar-sep"></div>
+    <div class="cols-switcher">
+      <button class="col-btn" data-c="1">1</button>
+      <button class="col-btn active" data-c="2">2</button>
+      <button class="col-btn" data-c="3">3</button>
+      <button class="col-btn" data-c="4">4</button>
+      <button class="col-btn" data-c="5">5</button>
+    </div>
+  </div>
+  <div class="filter-bar">
+    <input class="filter-input" id="filter-search" placeholder="🔍 Search PC name or group..." oninput="applyFilter()"/>
+    <button class="filter-pill active" data-f="all" onclick="setFilter('all',this)">All</button>
+    <button class="filter-pill" data-f="online" onclick="setFilter('online',this)">🟢 Online</button>
+    <button class="filter-pill" data-f="offline" onclick="setFilter('offline',this)">🔴 Offline</button>
+  </div>
+  <div id="pc-container"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let keys = [];
+let allAgents = [];
+let cols = 2;
+let filterMode = 'all';
+let filterSearch = '';
+let refreshInterval = null;
+
+setInterval(() => {
+  const now = new Date();
+  document.getElementById('clock').innerHTML =
+    `<span>${now.toLocaleTimeString([],{hour12:false})}</span> ${now.toLocaleDateString([],{month:'short',day:'numeric'})}`;
+}, 1000);
+
+(function init() {
+  const saved = localStorage.getItem('gs_keys_v2');
+  if (saved) { try { keys = JSON.parse(saved); } catch(e){} }
+  if (!keys.length) keys.push({key:'', label:'Account 1'});
+  renderKeyRows();
+  document.querySelectorAll('.col-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      cols = parseInt(b.dataset.c);
+      document.querySelectorAll('.col-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.querySelectorAll('.pc-grid').forEach(g => g.className = `pc-grid c${cols}`);
+    });
+  });
+})();
+
+function renderKeyRows() {
+  const c = document.getElementById('key-rows');
+  c.innerHTML = '';
+  keys.forEach((k, i) => {
+    const row = document.createElement('div');
+    row.className = 'key-row';
+    row.innerHTML = `
+      <input type="password" placeholder="Paste API key from getscreen.me settings"
+        value="${esc(k.key)}" oninput="keys[${i}].key=this.value;saveKeys()" autocomplete="off"/>
+      <input type="text" placeholder="Label (e.g. Main Acct)"
+        value="${esc(k.label)}" oninput="keys[${i}].label=this.value;saveKeys()"/>
+      <button class="remove-key" onclick="removeKey(${i})">✕</button>`;
+    c.appendChild(row);
+  });
+}
+
+function addKeyRow() {
+  keys.push({key:'', label:`Account ${keys.length+1}`});
+  renderKeyRows();
+}
+
+function removeKey(i) {
+  if (keys.length <= 1) { toast('Need at least one key','red'); return; }
+  keys.splice(i,1);
+  renderKeyRows();
+  saveKeys();
+}
+
+function saveKeys() {
+  localStorage.setItem('gs_keys_v2', JSON.stringify(keys));
+}
+
+async function launch() {
+  const valid = keys.filter(k => k.key.trim());
+  if (!valid.length) { showMsg('Enter at least one API key.','error'); return; }
+  const btn = document.getElementById('launch-btn');
+  btn.disabled = true; btn.textContent = 'CONNECTING...';
+  showMsg('','');
+  const results = await fetchAllAgents(valid);
+  if (!results.agents.length && results.errors.length) {
+    showMsg(results.errors.join(' | '),'error');
+    btn.disabled = false; btn.textContent = 'LOAD ALL PCS'; return;
+  }
+  saveKeys();
+  allAgents = results.agents;
+  buildDashboard();
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('hdr-edit-btn').style.display = '';
+  document.getElementById('hdr-refresh-btn').style.display = '';
+  btn.disabled = false; btn.textContent = 'LOAD ALL PCS';
+  clearInterval(refreshInterval);
+  refreshInterval = setInterval(silentRefresh, 30000);
+}
+
+async function fetchAllAgents(keyList) {
+  const agents = [], errors = [];
+  await Promise.all(keyList.map(async ({key, label}) => {
+    try {
+      const res = await fetch('https://api.getscreen.me/v1/agents/list', {
+        headers: {'X-Api-Key': key.trim()}
+      });
+      if (!res.ok) {
+        errors.push(`[${label}] ${res.status === 403 ? 'Invalid API key' : 'Error '+res.status}`);
+        return;
+      }
+      const data = await res.json();
+      (data.data || []).forEach(a => agents.push({...a, _accountLabel: label, _apiKey: key.trim()}));
+    } catch(e) {
+      errors.push(`[${label}] Network error — make sure you're running this from a browser (not file://)`);
+    }
+  }));
+  return {agents, errors};
+}
+
+async function getConnectUrl(agent) {
+  try {
+    const res = await fetch('https://api.getscreen.me/v1/agents/connect', {
+      method: 'POST',
+      headers: {'X-Api-Key': agent._apiKey, 'Content-Type': 'application/json'},
+      body: JSON.stringify({id: agent.id})
+    });
+    if (!res.ok) return agent.permanent_url || null;
+    const data = await res.json();
+    return data.data?.url || agent.permanent_url || null;
+  } catch(e) { return agent.permanent_url || null; }
+}
+
+function buildDashboard() {
+  renderStats();
+  renderGrid();
+}
+
+function renderStats() {
+  const online = allAgents.filter(a => a.online).length;
+  const offline = allAgents.length - online;
+  const accounts = {};
+  allAgents.forEach(a => { accounts[a._accountLabel] = (accounts[a._accountLabel]||0)+1; });
+  let html = `
+    <div class="stat-chip"><span class="dot" style="background:var(--text)"></span>Total <span class="val">${allAgents.length}</span></div>
+    <div class="stat-chip"><span class="dot" style="background:var(--green);box-shadow:0 0 5px var(--green)"></span>Online <span class="val" style="color:var(--green)">${online}</span></div>
+    <div class="stat-chip"><span class="dot" style="background:var(--red)"></span>Offline <span class="val" style="color:var(--red)">${offline}</span></div>`;
+  Object.entries(accounts).forEach(([label, count]) => {
+    html += `<div class="stat-chip" style="border-color:rgba(77,159,255,0.25)"><span class="dot" style="background:var(--blue)"></span>${esc(label)} <span class="val" style="color:var(--blue)">${count}</span></div>`;
+  });
+  document.getElementById('dash-stats').innerHTML = html;
+}
+
+function renderGrid() {
+  const container = document.getElementById('pc-container');
+  const groups = {}, order = [];
+  allAgents.forEach(a => {
+    if (!groups[a._accountLabel]) { groups[a._accountLabel] = []; order.push(a._accountLabel); }
+    groups[a._accountLabel].push(a);
+  });
+  const search = filterSearch.toLowerCase();
+  let html = '';
+  order.forEach(label => {
+    let agents = groups[label];
+    if (filterMode === 'online') agents = agents.filter(a => a.online);
+    if (filterMode === 'offline') agents = agents.filter(a => !a.online);
+    if (search) agents = agents.filter(a =>
+      (a.name||'').toLowerCase().includes(search) || (a.group||'').toLowerCase().includes(search));
+    if (!agents.length) return;
+    html += `
+      <div class="account-section">
+        <div class="account-header">
+          <div class="account-tag">ACCOUNT</div>
+          <div class="account-name">${esc(label)}</div>
+          <div class="account-count">${agents.length} device${agents.length!==1?'s':''}</div>
+        </div>
+        <div class="pc-grid c${cols}">${agents.map(a => renderCard(a)).join('')}</div>
+      </div>`;
+  });
+  container.innerHTML = html || `<div class="empty-state">No PCs match the current filter.</div>`;
+}
+
+function renderCard(a) {
+  const os = {win:'🪟', mac:'🍎', linux:'🐧', android:'🤖'}[a.os] || '💻';
+  const lastSeen = a.last_time ? timeAgo(a.last_time) : '—';
+  const geo = a.geo ? [a.geo.city, a.geo.country].filter(Boolean).join(', ') : '';
+  const preview = a.online && a.preview_url
+    ? `<img src="${esc(a.preview_url)}" alt="preview" loading="lazy"
+         onerror="this.parentNode.querySelector('.preview-offline') && (this.style.display='none')">`
+    : `<div class="preview-offline"><div class="offline-icon">🔌</div><span>Offline</span></div>`;
+  return `
+    <div class="pc-card ${a.online?'online':''}" id="card-${a.id}">
+      <div class="pc-preview" onclick="connectTo(${a.id})">
+        ${preview}
+        <div class="preview-overlay">
+          <button class="connect-btn" ${!a.online?'disabled':''} onclick="event.stopPropagation();connectTo(${a.id})">
+            ${a.online ? 'CONNECT' : 'OFFLINE'}
+          </button>
+        </div>
+      </div>
+      <div class="pc-info">
+        <div class="pc-meta">
+          <div class="pc-name">${os} ${esc(a.name)}</div>
+          <div class="pc-details">
+            ${a.group ? `<span>${esc(a.group)}</span><span class="sep">·</span>` : ''}
+            ${geo ? `<span>${esc(geo)}</span><span class="sep">·</span>` : ''}
+            <span>v${esc(a.version||'?')}</span>
+            <span class="sep">·</span>
+            <span>${a.online ? 'Active now' : lastSeen}</span>
+          </div>
+          <div class="pc-actions">
+            <button class="pc-icon-btn" title="Connect" onclick="connectTo(${a.id})" ${!a.online?'disabled style="opacity:0.4"':''}>⚡</button>
+            <button class="pc-icon-btn" title="Refresh preview" onclick="refreshPreview(${a.id})">↺</button>
+            <button class="pc-icon-btn" title="Copy permanent URL" onclick="copyUrl(${a.id})">📋</button>
+          </div>
+        </div>
+        <div><div class="online-badge ${a.online?'on':'off'}">${a.online?'ONLINE':'OFFLINE'}</div></div>
+      </div>
+    </div>`;
+}
+
+async function connectTo(id) {
+  const a = allAgents.find(x => x.id === id);
+  if (!a) return;
+  if (!a.online) { toast('PC is offline','red'); return; }
+  toast('Getting connection link…','green');
+  const url = await getConnectUrl(a);
+  if (url) window.open(url, '_blank');
+  else toast('Could not get connection URL','red');
+}
+
+function refreshPreview(id) {
+  const a = allAgents.find(x => x.id === id);
+  if (!a?.preview_url) return;
+  const img = document.querySelector(`#card-${id} img`);
+  if (img) { img.src = a.preview_url + '?t=' + Date.now(); toast('Preview refreshed','green'); }
+}
+
+function copyUrl(id) {
+  const a = allAgents.find(x => x.id === id);
+  if (!a?.permanent_url) { toast('No permanent URL available','red'); return; }
+  navigator.clipboard.writeText(a.permanent_url).then(() => toast('URL copied!','green'));
+}
+
+async function refreshAll() {
+  const bar = document.getElementById('refresh-bar');
+  bar.style.width = '40%';
+  const results = await fetchAllAgents(keys.filter(k => k.key.trim()));
+  bar.style.width = '100%';
+  allAgents = results.agents;
+  buildDashboard();
+  setTimeout(() => bar.style.width = '0%', 500);
+  toast(`Refreshed — ${allAgents.filter(a=>a.online).length}/${allAgents.length} online`,'green');
+}
+
+async function silentRefresh() {
+  const results = await fetchAllAgents(keys.filter(k => k.key.trim()));
+  if (results.agents.length) { allAgents = results.agents; renderStats(); renderGrid(); }
+}
+
+function backToSetup() {
+  clearInterval(refreshInterval);
+  document.getElementById('setup').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('hdr-edit-btn').style.display = 'none';
+  document.getElementById('hdr-refresh-btn').style.display = 'none';
+  renderKeyRows();
+}
+
+function setFilter(mode, el) {
+  filterMode = mode;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+function applyFilter() {
+  filterSearch = document.getElementById('filter-search').value;
+  renderGrid();
+}
+
+function showMsg(msg, type) {
+  const el = document.getElementById('setup-msg');
+  el.innerHTML = msg ? `<div class="${type==='error'?'error-msg':'success-msg'}">${esc(msg)}</div>` : '';
+}
+
+function timeAgo(ts) {
+  const d = Math.floor(Date.now()/1000) - ts;
+  if (d < 60) return `${d}s ago`;
+  if (d < 3600) return `${Math.floor(d/60)}m ago`;
+  if (d < 86400) return `${Math.floor(d/3600)}h ago`;
+  return `${Math.floor(d/86400)}d ago`;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let toastT;
+function toast(msg, type='green') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `show ${type}`;
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.className='', 2800);
+}
+</script>
+</body>
+</html>
